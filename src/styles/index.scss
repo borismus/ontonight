@@ -1,2 +1,16 @@
 body {
 }
+
+.event {
+  display: flex;
+  flex-direction: row;
+
+  .info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filler {
+    flex-grow: 1;
+  }
+}

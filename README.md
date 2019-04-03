@@ -32,6 +32,8 @@ Firebase functions to call the SongKick API, filter results and return them.
     Request {
       zip: number
       radius: number
+      start: number
+      end: number
     }
     Response {[
       {
