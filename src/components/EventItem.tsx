@@ -1,4 +1,6 @@
 import * as React from 'react';
+import Icon from '@material-ui/core/Icon';
+import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
 
 import {Event} from '../../functions/src/interfaces';
@@ -6,10 +8,19 @@ import {Event} from '../../functions/src/interfaces';
 interface Props {
   event: Event;
   videos?: string[];
+  onPlayVideo(video: string): void;
 }
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
-  const {event} = props;
+  function createVideoButton(video: string, ind: number) {
+    return (<IconButton onClick={() => props.onPlayVideo(video)} key={ind}>
+      <Icon>play_arrow</Icon>
+    </IconButton>);
+  }
+
+  const {event, videos} = props;
+  const videoButtons = videos.map((v, i) => createVideoButton(v, i));
+
   return (
     <div className="event">
       <div className="info">
@@ -20,7 +31,7 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
 
       <div className="filler" />
 
-      <div className="videos">{props.videos.length} videos</div>
+      <div className="videos">{videoButtons}</div>
     </div>
   );
 }
