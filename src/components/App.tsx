@@ -11,7 +11,6 @@ export const App: React.StatelessComponent<{}> = (props) => {
       <IconButton color="secondary" className="report-bug" onClick={handleBug}>
         <Icon>bug_report</Icon>
       </IconButton>
-      <header>On Tonight</header>
       {props.children}
     </div>
   );
