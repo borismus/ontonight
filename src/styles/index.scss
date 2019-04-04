@@ -27,6 +27,10 @@ header {
 
   .date {
     flex-grow: 1;
+
+    .field {
+      width: 150px;
+    }
   }
 }
 
@@ -37,6 +41,11 @@ header {
   .info {
     display: flex;
     flex-direction: column;
+
+    .title {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .filler {

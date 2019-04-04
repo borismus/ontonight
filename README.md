@@ -51,16 +51,22 @@ Firebase functions to call the SongKick API, filter results and return them.
 
 Firebase functions to find the best band videos on YouTube.
 
-    listVideosForArtist
+    listVideosForArtists
 
     Request {
-      artist: string
+      artists: "Radiohead,Ween"
     }
     Response {
-      videos: [
-        "https://www.youtube.com/watch?v=OCie4XtSdqA",
-        "https://www.youtube.com/watch?v=PB8g1h152bQ",
-      ]
+      videos: {
+        Radiohead: [
+          "https://www.youtube.com/watch?v=OCie4XtSdqA",
+          "https://www.youtube.com/watch?v=PB8g1h152bQ",
+        ],
+        Ween: [
+          "https://www.youtube.com/watch?v=OCie4XtSdqB",
+          "https://www.youtube.com/watch?v=PB8g1h152bR",
+        ]
+      }
     }
 
 And, of course, the front-end itself that lets you do the things in a pleasant,
@@ -76,3 +82,20 @@ shuffling through all of the search results.
 Let's see how slow each of the steps here is before optimizing and caching. But
 since we use Firebase Functions we can easily cache everything in a Firebase
 database.
+
+---
+
+Turns out YouTube API is pretty quota limited. We go to YouTube in order to get
+videos for a given band. We can safely cache these results in Firebase since
+they hardly ever change. This can be done on a per-artist basis:
+
+/artist_videos/:artistName
+{
+  0: videoId,
+  1: videoId,
+  ...
+}
+
+So, before hitting the YouTube API, first check this firebase cache. If there's
+something there, return those results. If there's nothing there, hit the YouTube
+API, process, cache the results and return them.

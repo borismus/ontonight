@@ -58,15 +58,14 @@ export class Upcoming extends React.Component<Props, State> {
 
     videoRequest: null,
     //videoResponse: null,
-    videoResponse: JSON.parse(`{"videos":[{"performer_name":"Tommy Genesis","video":"o77coh1WnYA"},{"performer_name":"Tommy Genesis","video":"tWwHmNhYaFg"}]}`),
+    videoResponse: JSON.parse(
+      `{"videos":{"Tommy Genesis":["o77coh1WnYA", "tWwHmNhYaFg"]}}`),
   }
 
   componentDidMount() {
     const width = Number(document.body.clientWidth);
     const height = width / VIDEO_ASPECT_RATIO;
     this.setState({videoHeight: (height + VIDEO_CONTROL_HEIGHT)});
-
-    this.updatePerformerVideos();
   }
 
   get today() {
@@ -115,8 +114,6 @@ export class Upcoming extends React.Component<Props, State> {
           />
         </div>
 
-        <Divider />
-
         {this.renderEvents()}
       </div>
 
@@ -161,7 +158,8 @@ export class Upcoming extends React.Component<Props, State> {
       }
     };
     return (<div className="video">
-      <YouTube videoId={videoId} opts={opts} onReady={this.handleVideoReady} />
+      <YouTube videoId={videoId} opts={opts} onReady={this.handleVideoReady}
+        onStateChange={this.handleVideoStateChange} />
       <div className="controls">
         <IconButton className="stop-video" onClick={this.handleStopVideo}>
           <Icon>close</Icon>
@@ -172,12 +170,21 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handleVideoReady = (event) => {
+    console.log('handleVideoReady', event);
+    event.target.playVideo();
+    this.setVideoTitle(event);
+  }
+
+  private handleVideoStateChange = (event) => {
+    console.log('handleVideoStateChange', event);
+    this.setVideoTitle(event);
+  }
+
+  private setVideoTitle(event) {
     const data = event.target.getVideoData();
     this.setState({
       videoTitle: data.title,
     });
-    console.log('handleVideoReady', data);
-    event.target.playVideo();
   }
 
   private handlePlaceChange = (postalCode: string) => {
@@ -216,15 +223,16 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private getEventVideos(event: Event): string[] {
+    const {videoResponse} = this.state;
     const videos = [];
-    if (!this.performerVideos) {
+    if (!videoResponse) {
       return videos;
     }
 
     // Look up video for each performer.
     for (let perf of event.performers) {
       const {name} = perf;
-      const perfVideos = this.performerVideos[name];
+      const perfVideos = videoResponse.videos[name];
       if (perfVideos) {
         for (let video of perfVideos) {
           videos.push(video);
@@ -254,27 +262,7 @@ export class Upcoming extends React.Component<Props, State> {
     });
     const videoResponse = await this.makeVideoRequest(this.state.videoRequest)
     console.log('videoResponse', videoResponse);
-    this.updatePerformerVideos();
-    this.setState({videoResponse}, () => this.updatePerformerVideos());
-  }
-
-  private updatePerformerVideos() {
-    this.performerVideos = {};
-    for (let perfVideo of this.state.videoResponse.videos) {
-      this.addPerformerVideo(perfVideo);
-    }
-    this.setState({loadingVideos: false});
-    //console.log('performerVideos', this.performerVideos);
-  }
-
-  private addPerformerVideo(perfVideo: PerformerVideo) {
-    const {performer_name, video} = perfVideo;
-    const existing = this.performerVideos[performer_name];
-    if (existing) {
-      existing.push(video);
-    } else {
-      this.performerVideos[performer_name] = [video];
-    }
+    this.setState({videoResponse, loadingVideos: false});
   }
 
   private shuffleAll() {

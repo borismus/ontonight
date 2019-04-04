@@ -13,19 +13,33 @@ interface Props {
   onDateChange(dateType: number, startDate: string, endDate: string): void;
 }
 
-const dateTypes = ['today', 'tomorrow', 'this week'];
+const dateTypes = ['today', 'tomorrow', 'this week', 'this weekend', 'next week', 'next weekend'];
 
 enum DateType {
   TODAY,
   TOMORROW,
   THIS_WEEK,
+  THIS_WEEKEND,
+  NEXT_WEEK,
+  NEXT_WEEKEND,
 }
 
+let initial = true;
 export const DatePicker: React.StatelessComponent<Props> = (props) => {
   function handleDate(event) {
     const dateType = event.target.value;
+    updateDate(dateType);
+  }
+
+  function updateDate(dateType: DateType) {
     const [start_date, end_date] = getDateRange(dateType);
     props.onDateChange(dateType, start_date, end_date);
+  }
+
+  // Terrible hack.
+  if (initial) {
+    updateDate(props.dateType);
+    initial = false;
   }
 
   const menuItems = dateTypes.map((dateType, ind) =>
@@ -58,7 +72,13 @@ function getDateRange(dateType: DateType) {
     case DateType.TOMORROW:
       return [daysFromToday(1), daysFromToday(2)];
     case DateType.THIS_WEEK:
-      return [daysFromToday(0), daysFromToday(7)];
+      return [dayOfWeek(1), dayOfWeek(7)];
+    case DateType.THIS_WEEKEND:
+      return [dayOfWeek(5), dayOfWeek(7)];
+    case DateType.NEXT_WEEK:
+      return [dayOfWeek(1, +1), dayOfWeek(7, +1)];
+    case DateType.NEXT_WEEKEND:
+      return [dayOfWeek(5, +1), dayOfWeek(7, +1)];
     default:
       console.error('Unknown DateType', dateType);
   }
@@ -73,6 +93,10 @@ function daysFromToday(count: number) {
 }
 
 function capitalize(s: string) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function dayOfWeek(day: number, weeks?: number) {
+  weeks = weeks || 0;
+  return moment().isoWeekday(day).add(weeks, 'weeks').format(YMD_FORMAT);
+}

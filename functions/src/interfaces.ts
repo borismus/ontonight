@@ -41,5 +41,5 @@ export interface VideoRequest {
 }
 
 export interface VideoResponse {
-  videos: PerformerVideo[];
+  videos: {[key: string]: string[]};
 }

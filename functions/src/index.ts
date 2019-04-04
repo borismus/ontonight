@@ -1,8 +1,11 @@
 import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 import * as zipcodes from 'zipcodes';
 import * as fetch from 'node-fetch';
 
-import {EventRequest, EventResponse, Event} from './interfaces';
+admin.initializeApp();
+
+import {EventRequest, EventResponse, Event, VideoRequest, VideoResponse} from './interfaces';
 
 import {YOUTUBE_KEY, SEATGEEK_CLIENT_ID} from './secrets';
 
@@ -52,20 +55,14 @@ export const listVideosForPerformers = functions.https.onRequest(async (request,
     return;
   }
   const perfNames = performers.split(',');
-  const perfVideos = [];
+  const videos = {};
   for (const performer of perfNames) {
-    console.log(`listVideosForPerformer: performers=${performer}.`);
-    const videos = await fetchVideosForPerformer(performer);
-    for (const video of videos.slice(0, MAX_VIDEO_COUNT)) {
-      const id = video.id.videoId;
-      perfVideos.push({
-        performer_name: performer,
-        video: id,
-      });
-    }
+    console.log(`listVideosForPerformer: performer=${performer}.`);
+    const performerVideos = await fetchCachedVideosForPerformer(performer);
+    videos[performer] = performerVideos;
   }
   response.send({
-    videos: perfVideos,
+    videos,
   });
 });
 
@@ -108,7 +105,7 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
   const count = 1000;
   const venueCsv = venueIds.map(id => String(id)).join(',');
   //console.log('venueCsv', venueCsv);
-  const reqUrl = `${SEATGEEK_ROOT}/events?venue.id=${venueCsv}&client_id=${SEATGEEK_CLIENT_ID}&per_page=${count}&datetime_utc.gte=${start_date}&datetime_utc.lte=${end_date}`;
+  const reqUrl = `${SEATGEEK_ROOT}/events?venue.id=${venueCsv}&client_id=${SEATGEEK_CLIENT_ID}&per_page=${count}&datetime_local.gte=${start_date}&datetime_local.lte=${end_date}`;
   //console.log(reqUrl);
   const res = await fetch(reqUrl);
   const json = await res.json();
@@ -133,15 +130,33 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
   return events;
 }
 
-async function fetchVideosForPerformer(performer: string) {
+async function fetchVideosForPerformer(performer: string) : Promise<string[]> {
   // Call YouTube API.
   const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&order=viewCount&type=video&maxResults=${MAX_VIDEO_COUNT}&topicId=${MUSIC_TOPIC}`;
   console.log('youtube url', url);
   const res = await fetch(url);
   const json = await res.json();
-  return json.items;
+  const videos = json.items;
+
+  const out = [];
+  for (const video of videos.slice(0, MAX_VIDEO_COUNT)) {
+    const id = video.id.videoId;
+    out.push(id);
+  }
+  return out;
 }
 
 async function fetchCachedVideosForPerformer(performer: string) {
   // Check for cached search results to avoid going to YouTube.
+  const performerSafe = escape(performer.replace(/\./g, '%2E'));
+  const cache = admin.database().ref('videos').child(performerSafe);
+  const cachedVideos = (await cache.once('value')).val();
+
+  if (cachedVideos) {
+    return cachedVideos;
+  }
+
+  const videos = await fetchVideosForPerformer(performer);
+  await cache.set(videos);
+  return videos;
 }
