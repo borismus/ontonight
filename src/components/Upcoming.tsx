@@ -42,7 +42,7 @@ interface State {
 
 export class Upcoming extends React.Component<Props, State> {
   state = {
-    dateType: 0,
+    dateType: Number(localStorage.dateType) || 0,
     loading: false,
     loadingVideos: false,
 
@@ -52,8 +52,8 @@ export class Upcoming extends React.Component<Props, State> {
     shuffling: false,
 
     eventRequest: {
-      radius: 3,
-      postal_code: '98103',
+      radius: localStorage.radius || 3,
+      postal_code: localStorage.postalCode || '98103',
       start_date: this.today,
       end_date: this.daysFromToday(7),
     },
@@ -125,7 +125,7 @@ export class Upcoming extends React.Component<Props, State> {
             <PlacePicker postalCode={eventRequest.postal_code}
               onPlaceChange={this.handlePlaceChange} />
             <TextField
-              className="field"
+              style={{width: 30}}
               label="radius"
               value={eventRequest.radius}
               onChange={this.handleRadiusChange}
@@ -222,7 +222,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handlePlaceChange = (postalCode: string) => {
-    console.log('handlePlaceChange', postalCode);
+    localStorage.postalCode = postalCode;
     this.setState({
       eventRequest: {
         ...this.state.eventRequest,
@@ -232,6 +232,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handleDateChange = (dateType: number, startDate: string, endDate: string) => {
+    localStorage.dateType = dateType;
     this.setState({
       dateType,
       eventRequest: {
@@ -243,7 +244,7 @@ export class Upcoming extends React.Component<Props, State> {
 
   private handleRadiusChange = (event) => {
     const radius = event.target.value;
-    console.log('handleRadiusChange', radius);
+    localStorage.radius = radius;
     this.setState({
       eventRequest: {
         ...this.state.eventRequest,
@@ -312,14 +313,17 @@ export class Upcoming extends React.Component<Props, State> {
 
   private nextRandom() {
     // Pick a random video to play.
-    this.setState({
-      videoId: pickRandom(this.allVideoIds),
-    });
+    let videoId = this.state.videoId;
+    while (videoId == this.state.videoId) {
+      videoId = pickRandom(this.allVideoIds);
+    }
+    this.setState({videoId});
   }
 
   private handlePlayVideo = (video: string) => {
+    // A specific video was selected to play.
     console.log('handlePlayVideo', video);
-    this.setState({videoId: video, videoTitle: null});
+    this.setState({videoId: video, videoTitle: null, shuffling: false});
   }
 
 

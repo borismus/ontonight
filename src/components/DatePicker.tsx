@@ -51,7 +51,7 @@ export const DatePicker: React.StatelessComponent<Props> = (props) => {
     <FormControl className="date">
       <InputLabel htmlFor="date">Date</InputLabel>
       <Select
-        className="field"
+        style={{width: 150}}
         value={props.dateType}
         onChange={handleDate}
         inputProps={{

@@ -22,16 +22,8 @@ header {
     flex-wrap: wrap;
     margin: 0 16px;
 
-    .field {
-      width: 100px;
-    }
-
     .date {
       flex-grow: 1;
-
-      .field {
-        width: 150px;
-      }
     }
   }
 
@@ -88,5 +80,12 @@ header {
 }
 
 .actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ccc;
   text-align: center;
+}
+
+.play-video {
+  padding: 0 !important;
 }

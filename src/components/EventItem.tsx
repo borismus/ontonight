@@ -17,7 +17,8 @@ interface Props {
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
   function createVideoButton(video: string, ind: number) {
-    return (<IconButton onClick={() => props.onPlayVideo(video)} key={ind}>
+    return (<IconButton className="play-video"
+        onClick={() => props.onPlayVideo(video)} key={ind}>
       <Icon>play_arrow</Icon>
     </IconButton>);
   }

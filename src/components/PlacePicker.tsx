@@ -16,7 +16,7 @@ export const PlacePicker: React.StatelessComponent<Props> = (props) => {
   return (
     <div>
       <TextField
-        className="field" 
+        style={{width: 100}}
         label="Postal Code"
         value={props.postalCode}
         onChange={handlePostalCode}

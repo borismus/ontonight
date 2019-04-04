@@ -38,7 +38,7 @@
     "clean": "rm -rf dist/*",
     "test": "mocha -r ts-node/register --reporter spec test/test.ts",
     "build": "npm run clean && NODE_ENV=production webpack --progress --colors",
-    "deploy": "npm run build:prod && firebase deploy",
+    "deploy": "npm run build && firebase deploy",
     "lint": "gts check"
   },
   "author": "Boris Smus <boris@smus.com> (http://smus.com)",
