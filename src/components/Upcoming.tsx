@@ -1,6 +1,8 @@
 import * as React from 'react';
-import TextField from '@material-ui/core/TextField';
+import Icon from '@material-ui/core/Icon';
+import IconButton from '@material-ui/core/IconButton';
 import Divider from '@material-ui/core/Divider';
+import TextField from '@material-ui/core/TextField';
 import YouTube from 'react-youtube';
 
 import * as moment from 'moment';
@@ -14,13 +16,18 @@ import {Event, EventRequest, EventResponse, PerformerVideo,
 
 const API_ROOT = 'https://us-central1-live-music-preview.cloudfunctions.net';
 const YMD_FORMAT = 'YYYY-MM-DD';
+const VIDEO_ASPECT_RATIO = 1.78;
+const VIDEO_CONTROL_HEIGHT = 48;
 
 interface Props {}
 
 interface State {
+  dateType: number;
   loading: boolean;
   loadingVideos: boolean;
   videoId: string;
+  videoHeight: number;
+  videoTitle: string;
 
   eventRequest: EventRequest;
   eventResponse: EventResponse;
@@ -32,9 +39,12 @@ export class Upcoming extends React.Component<Props, State> {
   performerVideos: {[key: string]: string[]};
 
   state = {
+    dateType: 0,
     loading: false,
     loadingVideos: false,
     videoId: null,
+    videoHeight: 0,
+    videoTitle: null,
     eventRequest: {
       radius: 3,
       postal_code: '98103',
@@ -51,6 +61,14 @@ export class Upcoming extends React.Component<Props, State> {
     videoResponse: JSON.parse(`{"videos":[{"performer_name":"Tommy Genesis","video":"o77coh1WnYA"},{"performer_name":"Tommy Genesis","video":"tWwHmNhYaFg"}]}`),
   }
 
+  componentDidMount() {
+    const width = Number(document.body.clientWidth);
+    const height = width / VIDEO_ASPECT_RATIO;
+    this.setState({videoHeight: (height + VIDEO_CONTROL_HEIGHT)});
+
+    this.updatePerformerVideos();
+  }
+
   get today() {
     return this.daysFromToday(0);
   }
@@ -59,7 +77,7 @@ export class Upcoming extends React.Component<Props, State> {
     return moment().add(count, 'days').format(YMD_FORMAT);
   }
 
-  get uniquePerformers() {
+  get uniquePerformerNames() {
     const performers = [];
     for (let event of this.state.eventResponse.events) {
       for (let perf of event.performers) {
@@ -75,26 +93,32 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   render() {
-    const {eventRequest} = this.state;
+    const {dateType, eventRequest, videoHeight} = this.state;
+    let mainStyle = null;
+    if (this.state.videoId) {
+      mainStyle = {marginBottom: videoHeight};
+    }
+
     return (<div>
-      <DatePicker onDateChange={this.handleDateChange} />
-      <PlacePicker postalCode={eventRequest.postal_code}
-        onPlaceChange={this.handlePlaceChange} />
-      <TextField
-        label="radius"
-        value={eventRequest.radius}
-        onChange={this.handleRadiusChange}
-        type="number"
-        InputLabelProps={{
-          shrink: true,
-        }}
-        margin="normal"
-        variant="filled"
-      />
+      <div style={mainStyle}>
+        <div className="options">
+          <DatePicker dateType={dateType}
+            onDateChange={this.handleDateChange} />
+          <PlacePicker postalCode={eventRequest.postal_code}
+            onPlaceChange={this.handlePlaceChange} />
+          <TextField
+            className="field"
+            label="radius"
+            value={eventRequest.radius}
+            onChange={this.handleRadiusChange}
+            type="number"
+          />
+        </div>
 
-      <Divider />
+        <Divider />
 
-      {this.renderEvents()}
+        {this.renderEvents()}
+      </div>
 
       {this.renderVideoPlayer()}
     </div>);
@@ -120,14 +144,39 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private renderVideoPlayer() {
-    const {videoId} = this.state;
+    const {videoHeight, videoId} = this.state;
     if (!videoId) {
       return null;
     }
-    return (<YouTube videoId={videoId} onReady={this.handleVideoReady} />);
+
+    // See https://developers.google.com/youtube/player_parameters for all
+    // parameters.
+    const opts = {
+      width: '100%',
+      height: String(videoHeight),
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        modestbranding: 1,
+      }
+    };
+    return (<div className="video">
+      <YouTube videoId={videoId} opts={opts} onReady={this.handleVideoReady} />
+      <div className="controls">
+        <IconButton className="stop-video" onClick={this.handleStopVideo}>
+          <Icon>close</Icon>
+        </IconButton>
+        <div className="title">{this.state.videoTitle}</div>
+      </div>
+    </div>);
   }
 
-  private handleVideoReady(event) {
+  private handleVideoReady = (event) => {
+    const data = event.target.getVideoData();
+    this.setState({
+      videoTitle: data.title,
+    });
+    console.log('handleVideoReady', data);
     event.target.playVideo();
   }
 
@@ -141,13 +190,14 @@ export class Upcoming extends React.Component<Props, State> {
     });
   }
 
-  private handleDateChange = (startDate: string, endDate: string) => {
+  private handleDateChange = (dateType: number, startDate: string, endDate: string) => {
     this.setState({
+      dateType,
       eventRequest: {
         ...this.state.eventRequest,
         start_date: startDate, end_date: endDate,
       }
-    });
+    }, () => this.updateEvents());
   }
 
   private handleRadiusChange = (event) => {
@@ -159,6 +209,10 @@ export class Upcoming extends React.Component<Props, State> {
         radius,
       }
     }, () => this.updateEvents());
+  }
+
+  private handleStopVideo = () => {
+    this.setState({videoId: null});
   }
 
   private getEventVideos(event: Event): string[] {
@@ -175,8 +229,6 @@ export class Upcoming extends React.Component<Props, State> {
         for (let video of perfVideos) {
           videos.push(video);
         }
-      } else {
-        console.log(`No video for ${name}.`);
       }
     }
     return videos;
@@ -188,20 +240,31 @@ export class Upcoming extends React.Component<Props, State> {
     console.log('eventResponse', eventResponse);
     this.setState({eventResponse, loading: false});
 
+    const performerNames = this.uniquePerformerNames;
+
+    // If there are no performers in this query, load no videos.
+    if (performerNames.length === 0) {
+      return;
+    }
+
     // Once we update the events, we should also update the videos.
     this.setState({
-      videoRequest: {performer_names: this.uniquePerformers},
+      videoRequest: {performer_names: performerNames},
       loadingVideos: true,
     });
     const videoResponse = await this.makeVideoRequest(this.state.videoRequest)
     console.log('videoResponse', videoResponse);
+    this.updatePerformerVideos();
+    this.setState({videoResponse}, () => this.updatePerformerVideos());
+  }
 
+  private updatePerformerVideos() {
     this.performerVideos = {};
-    for (let perfVideo of videoResponse.videos) {
+    for (let perfVideo of this.state.videoResponse.videos) {
       this.addPerformerVideo(perfVideo);
     }
-    this.setState({videoResponse, loadingVideos: false});
-    console.log('performerVideos', this.performerVideos);
+    this.setState({loadingVideos: false});
+    //console.log('performerVideos', this.performerVideos);
   }
 
   private addPerformerVideo(perfVideo: PerformerVideo) {
@@ -219,9 +282,7 @@ export class Upcoming extends React.Component<Props, State> {
 
   private handlePlayVideo = (video: string) => {
     console.log('handlePlayVideo', video);
-    this.setState({
-      videoId: video,
-    });
+    this.setState({videoId: video, videoTitle: null});
   }
 
 
@@ -240,18 +301,6 @@ private async makeEventRequest(eventRequest: EventRequest): Promise<EventRespons
 
   private async makeVideoRequest(videoRequest: VideoRequest): Promise<VideoResponse> {
     console.log('videoRequest', videoRequest);
-    /*
-    return {
-      videos: [{
-        performer_name: 'Tommy Genesis',
-        video: 'https://www.youtube.com/watch?v=cs926AIL-ck',
-      }, {
-        performer_name: 'Queensryche',
-        video: 'https://www.youtube.com/watch?v=QJ7C71MMKlk',
-      }]
-    };
-     */
-
     const {performer_names} = this.state.videoRequest;
     for (let name of performer_names) {
       if (name.indexOf(',') >= 0) {

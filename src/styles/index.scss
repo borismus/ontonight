@@ -1,4 +1,33 @@
 body {
+  margin: 0;
+  font-family: 'Source Sans Pro', sans-serif;
+}
+
+header {
+  font-size: 36px;
+  height: 48px;
+  padding-left: 16px;
+  padding-top: 12px;
+}
+
+.report-bug {
+  position: absolute !important;
+  top: 0;
+  right: 0;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 16px;
+
+  .field {
+    width: 100px;
+  }
+
+  .date {
+    flex-grow: 1;
+  }
 }
 
 .event {
@@ -12,5 +41,30 @@ body {
 
   .filler {
     flex-grow: 1;
+  }
+}
+
+.video {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: black;
+  color: white;
+
+  .controls {
+    margin: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+
+    .title {
+      flex-grow: 1;
+    }
+
+    .stop-video {
+      color: white;
+    }
   }
 }

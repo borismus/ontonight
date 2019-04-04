@@ -9,8 +9,8 @@ import {YOUTUBE_KEY, SEATGEEK_CLIENT_ID} from './secrets';
 const YOUTUBE_ROOT = 'https://www.googleapis.com/youtube/v3';
 const SEATGEEK_ROOT = 'https://api.seatgeek.com/2/';
 const MAX_VIDEO_COUNT = 2;
+const MUSIC_TOPIC = '/m/04rlf';
 
-// Reference: https://firebase.google.com/docs/functions/typescript
 export const listLiveMusicNearby = functions.https.onRequest(async(request, response) => {
   // Enable cors.
   response.set('Access-Control-Allow-Origin', '*');
@@ -68,15 +68,6 @@ export const listVideosForPerformers = functions.https.onRequest(async (request,
     videos: perfVideos,
   });
 });
-
-async function fetchVideosForPerformer(performer: string) {
-  // Call YouTube API.
-  const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&order=viewCount&type=video`;
-  console.log('youtube url', url);
-  const res = await fetch(url);
-  const json = await res.json();
-  return json.items;
-}
 
 async function fetchLiveMusicNearby(request: EventRequest) : Promise<EventResponse> {
   const {postal_code, radius, start_date, end_date} = request;
@@ -140,4 +131,17 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
     events.push(newEvent);
   }
   return events;
+}
+
+async function fetchVideosForPerformer(performer: string) {
+  // Call YouTube API.
+  const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&order=viewCount&type=video&maxResults=${MAX_VIDEO_COUNT}&topicId=${MUSIC_TOPIC}`;
+  console.log('youtube url', url);
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.items;
+}
+
+async function fetchCachedVideosForPerformer(performer: string) {
+  // Check for cached search results to avoid going to YouTube.
 }

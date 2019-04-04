@@ -7,7 +7,7 @@ interface Props {
 }
 
 export const PlacePicker: React.StatelessComponent<Props> = (props) => {
-  const handlePostalCode = (event) => {
+  function handlePostalCode(event) {
     const postalCode = event.target.value;
     props.onPlaceChange(postalCode);
   }
@@ -16,14 +16,10 @@ export const PlacePicker: React.StatelessComponent<Props> = (props) => {
   return (
     <div>
       <TextField
+        className="field" 
         label="Postal Code"
         value={props.postalCode}
         onChange={handlePostalCode}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        margin="normal"
-        variant="filled"
       />
     </div>
     );
