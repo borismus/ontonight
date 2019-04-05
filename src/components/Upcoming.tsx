@@ -19,6 +19,7 @@ const API_ROOT = 'https://us-central1-live-music-preview.cloudfunctions.net';
 const YMD_FORMAT = 'YYYY-MM-DD';
 const VIDEO_ASPECT_RATIO = 1.78;
 const VIDEO_CONTROL_HEIGHT = 48;
+const VIDEO_MAX_HEIGHT = 200;
 
 interface Props {}
 
@@ -69,7 +70,7 @@ export class Upcoming extends React.Component<Props, State> {
 
   componentDidMount() {
     const width = Number(document.body.clientWidth);
-    const height = width / VIDEO_ASPECT_RATIO;
+    const height = Math.min(width / VIDEO_ASPECT_RATIO, VIDEO_MAX_HEIGHT);
     this.setState({videoHeight: (height + VIDEO_CONTROL_HEIGHT)});
   }
 
@@ -193,6 +194,9 @@ export class Upcoming extends React.Component<Props, State> {
           <Icon>close</Icon>
         </IconButton>
         <div className="title">{this.state.videoTitle}</div>
+        <IconButton className="next-video" onClick={this.handleNextVideo}>
+          <Icon>skip_next</Icon>
+        </IconButton>
       </div>
     </div>);
   }
@@ -255,6 +259,10 @@ export class Upcoming extends React.Component<Props, State> {
 
   private handleStopVideo = () => {
     this.setState({videoId: null, shuffling: false});
+  }
+
+  private handleNextVideo = () => {
+    this.nextRandom();
   }
 
   private getEventVideos(event: Event): string[] {
