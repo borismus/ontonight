@@ -87,6 +87,7 @@ async function fetchNearbyVenues(postal_code: string, radius: number): Promise<a
   // Get nearby venues.
   const count = 100;
   const url = `${SEATGEEK_ROOT}/venues?postal_code=${postal_code}&client_id=${SEATGEEK_CLIENT_ID}&per_page=${count}`;
+  console.log('seatgeek url', url);
   const res = await fetch(url);
   const json = await res.json();
 

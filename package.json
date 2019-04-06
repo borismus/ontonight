@@ -37,7 +37,7 @@
     "dev-server": "webpack-dev-server --inline",
     "clean": "rm -rf dist/*",
     "test": "mocha -r ts-node/register --reporter spec test/test.ts",
-    "build": "npm run clean && NODE_ENV=production webpack --progress --colors",
+    "build": "npm run clean && webpack --progress --colors --mode=production",
     "deploy": "npm run build && firebase deploy",
     "lint": "gts check"
   },
