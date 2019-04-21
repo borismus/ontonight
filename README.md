@@ -1,22 +1,27 @@
-Live Music Preview / On Tonight
+On Tonight
 ===
 
-Some cities, like Seattle, have a vibrant live music scene. However it can often
-be hard to navigate existing sites like The Stranger and SongKick. [What I really
-want](https://twitter.com/borismus/status/1065412031463927810) is, for a given
-day, week or weekend, to preview the bands that are playing nearby, and decide
-if I like one enough to go hear it. This project is a mashup between an existing
-service that enumerates upcoming bands and their schedules (eg. SongKick),
-another service that allows you to listen to a bunch of bands (eg. YouTube), and
-potentially a metadata service that gives you additional information about the
-band, like genre (eg. MusicBrainz).
+On an average evening in Seattle, you can walk along the center of Fremont,
+Ballard, or Capitol Hill, and pass by countless live music venues bursting with
+people pining to see some obscure and awesome indie musicians do their thing.
 
-The ultimate result is a mobile-friendly website that lets you search for bands
-playing nearby and at a certain time, and either 
+While wandering can be a good way of getting a good sense for what's up on a
+particular night, it's often impractical as neighbourhoods are relatively far
+apart, and time is limited. Sites like SongKick and SeatGeek do a good job of
+listing upcoming events but don't give a preview of the performer's work.
 
-1. Quickly preview bands that are appealing, or
-2. Shuffle all bands matching the criteria, keeping the tab open in the
-   background
+[What I really want](https://twitter.com/borismus/status/1065412031463927810)
+is to preview bands that coming to play nearby, and decide if I like one enough
+to go hear it. This project is a mashup between an existing service that
+enumerates upcoming bands and their schedules (eg. SongKick), another service
+that allows you to listen to a bunch of bands (eg. YouTube), and potentially a
+metadata service that gives you additional information about the band, like
+genre (eg. MusicBrainz). The ultimate result is a mobile-friendly website that
+lets you browse bands playing nearby, and in the near future. Two major use
+cases:
+
+1. Browse through a list of bands coming soon.
+2. Use as a music player, shuffling through all of the music.
 
 
 # Implementation
@@ -25,7 +30,8 @@ Open source.
 
 React + TS + Firebase.
 
-Firebase functions to call the SongKick API, filter results and return them.
+Firebase functions call an upcoming events API (eg. SongKick or SeatGeek),
+filter results and return them.
 
     listLiveMusicNearby
 

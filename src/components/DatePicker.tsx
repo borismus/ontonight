@@ -13,15 +13,14 @@ interface Props {
   onDateChange(dateType: number, startDate: string, endDate: string): void;
 }
 
-const dateTypes = ['today', 'tomorrow', 'this week', 'this weekend', 'next week', 'next weekend'];
+const dateTypes = ['today', 'tomorrow', 'this weekend', 'next seven days', 'next thirty days'];
 
 enum DateType {
   TODAY,
   TOMORROW,
-  THIS_WEEK,
   THIS_WEEKEND,
-  NEXT_WEEK,
-  NEXT_WEEKEND,
+  NEXT_7_DAYS,
+  NEXT_30_DAYS,
 }
 
 let initial = true;
@@ -71,14 +70,12 @@ function getDateRange(dateType: DateType) {
       return [daysFromToday(0), daysFromToday(1)];
     case DateType.TOMORROW:
       return [daysFromToday(1), daysFromToday(2)];
-    case DateType.THIS_WEEK:
-      return [dayOfWeek(1), dayOfWeek(7)];
     case DateType.THIS_WEEKEND:
       return [dayOfWeek(5), dayOfWeek(7)];
-    case DateType.NEXT_WEEK:
-      return [dayOfWeek(1, +1), dayOfWeek(7, +1)];
-    case DateType.NEXT_WEEKEND:
-      return [dayOfWeek(5, +1), dayOfWeek(7, +1)];
+    case DateType.NEXT_7_DAYS:
+      return [daysFromToday(0), daysFromToday(7)];
+    case DateType.NEXT_30_DAYS:
+      return [daysFromToday(0), daysFromToday(30)];
     default:
       console.error('Unknown DateType', dateType);
   }

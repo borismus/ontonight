@@ -35,6 +35,12 @@ export const listLiveMusicNearby = functions.https.onRequest(async(request, resp
     response.status(500).send('Missing end_date').end();
     return;
   }
+  const isZip = !isNaN(parseInt(postal_code));
+  if (!isZip) {
+    response.status(500).send('Canadian postal codes are not supported yet.');
+    return;
+  }
+
   console.log(`listLiveMusicNearby: radius=${radius}, postal_code=${postal_code}
     start_date=${start_date}, end_date=${end_date}`);
   const dataRequest: EventRequest = {
@@ -133,7 +139,7 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
 
 async function fetchVideosForPerformer(performer: string) : Promise<string[]> {
   // Call YouTube API.
-  const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&order=viewCount&type=video&maxResults=${MAX_VIDEO_COUNT}&topicId=${MUSIC_TOPIC}`;
+  const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&type=video&maxResults=${MAX_VIDEO_COUNT}&topicId=${MUSIC_TOPIC}`;
   console.log('youtube url', url);
   const res = await fetch(url);
   const json = await res.json();

@@ -40,6 +40,8 @@ header {
 .event-content {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  overflow: hidden;
 
   .info {
     display: flex;
@@ -48,6 +50,13 @@ header {
     .title {
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .venue {
+      color: grey;
+
+      &:hover {
+      }
     }
   }
 

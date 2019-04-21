@@ -12,6 +12,8 @@ import * as moment from 'moment';
 
 import {Event} from '../../functions/src/interfaces';
 
+const GOOGLE_MAPS_PREFIX = `https://www.google.com/maps/search/?api=1&query=`;
+
 interface Props {
   event: Event;
   videos?: string[];
@@ -31,17 +33,21 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
   const m = moment(event.datetime_local);
   const humanDate = m.format('MMMM D, LT');
   const performerImage = event.performers[0].image;
+  const {lat, lon} = event.venue.location;
+  const venueMapUrl = GOOGLE_MAPS_PREFIX + `${lat},${lon}`;
 
   return (
     <ListItem alignItems="flex-start" className="event">
       <ListItemAvatar>
-        <Avatar alt="Remy Sharp" src={performerImage} />
+        <Avatar alt="Performer Image" src={performerImage} />
       </ListItemAvatar>
       <ListItemText>
       <div className="event-content">
         <div className="info">
           <div className="title">{event.title}</div>
-          <div className="venue">{event.venue.name}</div>
+          <a className="venue" href={venueMapUrl} target="_blank">
+            {event.venue.name}
+          </a>
           <div className="date">{humanDate}</div>
         </div>
 

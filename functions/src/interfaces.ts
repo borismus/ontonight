@@ -3,9 +3,15 @@ export interface Performer {
   image: string;
 }
 
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
 export interface Venue {
   city: string;
   name: string;
+  location: LatLon;
 }
 
 export interface Event {
@@ -28,7 +34,8 @@ export interface EventRequest {
 }
 
 export interface EventResponse {
-  events: Event[];
+  events?: Event[];
+  error?: string;
 }
 
 export interface PerformerVideo {
