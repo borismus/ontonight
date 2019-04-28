@@ -13,14 +13,12 @@ interface Props {
   onDateChange(dateType: number, startDate: string, endDate: string): void;
 }
 
-const dateTypes = ['today', 'tomorrow', 'this weekend', 'next seven days', 'next thirty days'];
+const dateTypes = ['today', 'tomorrow', 'this weekend'];
 
 enum DateType {
   TODAY,
   TOMORROW,
   THIS_WEEKEND,
-  NEXT_7_DAYS,
-  NEXT_30_DAYS,
 }
 
 let initial = true;
@@ -67,15 +65,16 @@ export const DatePicker: React.StatelessComponent<Props> = (props) => {
 function getDateRange(dateType: DateType) {
   switch (dateType) {
     case DateType.TODAY:
-      return [daysFromToday(0), daysFromToday(1)];
+      return [daysFromToday(0), daysFromToday(0)];
     case DateType.TOMORROW:
-      return [daysFromToday(1), daysFromToday(2)];
+      return [daysFromToday(1), daysFromToday(1)];
     case DateType.THIS_WEEKEND:
-      return [dayOfWeek(5), dayOfWeek(7)];
-    case DateType.NEXT_7_DAYS:
-      return [daysFromToday(0), daysFromToday(7)];
-    case DateType.NEXT_30_DAYS:
-      return [daysFromToday(0), daysFromToday(30)];
+      let weekOffset = 0;
+      if (today() === dayOfWeek(7)) {
+        // If you check on Sunday, it should give you next weekend.
+        weekOffset = 1;
+      }
+      return [dayOfWeek(5, weekOffset), dayOfWeek(7, weekOffset)];
     default:
       console.error('Unknown DateType', dateType);
   }
@@ -93,7 +92,6 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function dayOfWeek(day: number, weeks?: number) {
-  weeks = weeks || 0;
-  return moment().isoWeekday(day).add(weeks, 'weeks').format(YMD_FORMAT);
+function dayOfWeek(day: number, weekOffset = 0) {
+  return moment().isoWeekday(day).add(weekOffset, 'weeks').format(YMD_FORMAT);
 }

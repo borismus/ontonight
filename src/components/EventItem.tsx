@@ -7,28 +7,35 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import ListItemText from '@material-ui/core/ListItemText';
 import TextField from '@material-ui/core/TextField';
+import Tooltip from '@material-ui/core/Tooltip';
+
 
 import * as moment from 'moment';
 
-import {Event} from '../../functions/src/interfaces';
+import {Event, PerformerVideo} from '../../functions/src/interfaces';
 
 const GOOGLE_MAPS_PREFIX = `https://www.google.com/maps/search/?api=1&query=`;
 
 interface Props {
   event: Event;
-  videos?: string[];
-  onPlayVideo(video: string): void;
+  videos?: PerformerVideo[];
+  onPlayVideo(localIndex: number): void;
+  highlight: boolean;
 }
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
-  function createVideoButton(video: string, ind: number) {
-    return (<IconButton className="play-video"
-        onClick={() => props.onPlayVideo(video)} key={ind}>
-      <Icon>play_arrow</Icon>
-    </IconButton>);
+  function createVideoButton(video: PerformerVideo, ind: number) {
+    const title = htmlDecode(video.video_title);
+    return (
+      <Tooltip title={title} key={ind}>
+        <IconButton className="play-video"
+          onClick={() => props.onPlayVideo(ind)}>
+          <Icon>play_arrow</Icon>
+        </IconButton>
+      </Tooltip>);
   }
 
-  const {event, videos} = props;
+  const {event, highlight, videos} = props;
   const videoButtons = videos.map((v, i) => createVideoButton(v, i));
   const m = moment(event.datetime_local);
   const humanDate = m.format('MMMM D, LT');
@@ -36,8 +43,16 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
   const {lat, lon} = event.venue.location;
   const venueMapUrl = GOOGLE_MAPS_PREFIX + `${lat},${lon}`;
 
+  // Create an anchor element for scroll purposes. Assumption is that this
+  // element is unique for the whole page.
+  let anchor = null;
+  if (highlight) {
+    anchor = (<div id="currently-playing"></div>);
+  }
+
   return (
-    <ListItem alignItems="flex-start" className="event">
+    <ListItem alignItems="flex-start"
+      className={'event' + (highlight ? ' highlight' : '')}>
       <ListItemAvatar>
         <Avatar alt="Performer Image" src={performerImage} />
       </ListItemAvatar>
@@ -56,6 +71,12 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
         <div className="videos">{videoButtons}</div>
       </div>
     </ListItemText>
+    {anchor}
     </ListItem>
   );
+}
+
+function htmlDecode(input: string) {
+  var doc = new DOMParser().parseFromString(input, "text/html");
+  return doc.documentElement.textContent;
 }

@@ -37,33 +37,40 @@ header {
   right: 0;
 }
 
-.event-content {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  overflow: hidden;
+.event {
+  &.highlight {
+    background: palegoldenrod;
+  }
 
-  .info {
+  .event-content {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: hidden;
 
-    .title {
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .info {
+      display: flex;
+      flex-direction: column;
 
-    .venue {
-      color: grey;
+      .title {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
-      &:hover {
+      .venue {
+        color: grey;
+
+        &:hover {
+        }
       }
     }
-  }
 
-  .filler {
-    flex-grow: 1;
+    .filler {
+      flex-grow: 1;
+    }
   }
 }
+
 
 .video {
   position: fixed;
@@ -74,7 +81,7 @@ header {
   color: white;
 
   .controls {
-    margin: 8px;
+    padding: 8px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -91,9 +98,9 @@ header {
 }
 
 .actions {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ccc;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ccc;
   text-align: center;
 }
 

@@ -40,7 +40,8 @@ export interface EventResponse {
 
 export interface PerformerVideo {
   performer_name: string;
-  video: string;
+  video_title: string;
+  video_id: string;
 }
 
 export interface VideoRequest {

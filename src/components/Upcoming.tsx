@@ -21,7 +21,7 @@ const API_ROOT = 'https://us-central1-live-music-preview.cloudfunctions.net';
 const YMD_FORMAT = 'YYYY-MM-DD';
 const VIDEO_ASPECT_RATIO = 1.78;
 const VIDEO_CONTROL_HEIGHT = 48;
-const VIDEO_MAX_HEIGHT = 200;
+const VIDEO_MAX_HEIGHT = 240;
 
 interface Props {}
 
@@ -31,7 +31,7 @@ interface State {
   loadingVideos: boolean;
 
   // Parameters concerning the video player.
-  videoId: string;
+  videoIndex: number;
   videoHeight: number;
   videoTitle: string;
   shuffling: boolean;
@@ -51,7 +51,7 @@ export class Upcoming extends React.Component<Props, State> {
     loading: false,
     loadingVideos: false,
 
-    videoId: null,
+    videoIndex: -1,
     videoHeight: 0,
     videoTitle: null,
     shuffling: false,
@@ -73,7 +73,17 @@ export class Upcoming extends React.Component<Props, State> {
   componentDidMount() {
     const width = Number(document.body.clientWidth);
     const height = Math.min(width / VIDEO_ASPECT_RATIO, VIDEO_MAX_HEIGHT);
-    this.setState({videoHeight: (height + VIDEO_CONTROL_HEIGHT)});
+    this.setState({videoHeight: height});
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (prevState.videoIndex != this.state.videoIndex) {
+      // Scroll to the right event.
+      const el = document.querySelector('#currently-playing');
+      if (el) {
+        el.scrollIntoView();
+      }
+    }
   }
 
   get today() {
@@ -103,23 +113,33 @@ export class Upcoming extends React.Component<Props, State> {
     return performers;
   }
 
-  get allVideoIds() {
+  get allPerformerVideos(): PerformerVideo[] {
     const {videoResponse} = this.state;
-    const ids = [];
+    const out = [];
+    if (!videoResponse) {
+      return out;
+    }
     for (let performer in videoResponse.videos) {
       const videos = videoResponse.videos[performer];
-      for (let videoId of videos) {
-        ids.push(videoId);
+      for (let video of videos) {
+        out.push(video);
       }
     }
-    return ids;
+    return out;
+  }
+
+  get videoId(): string {
+    if (this.state.videoIndex >= 0) {
+      return this.allPerformerVideos[this.state.videoIndex].video_id;
+    }
+    return null;
   }
 
   render() {
     const {dateType, eventRequest, videoHeight} = this.state;
     let mainStyle = null;
-    if (this.state.videoId) {
-      mainStyle = {marginBottom: videoHeight};
+    if (this.videoId) {
+      mainStyle = {marginBottom: (videoHeight + VIDEO_CONTROL_HEIGHT)};
     }
 
     return (<div>
@@ -143,14 +163,9 @@ export class Upcoming extends React.Component<Props, State> {
           </div>
         </header>
 
+        {this.renderActions()}
         {this.renderEvents()}
 
-        <div className="actions">
-          <Button variant="contained" color="primary" onClick={this.handleShuffle}>
-            Shuffle All
-            <Icon>shuffle</Icon>
-          </Button>
-        </div>
       </div>
 
       {this.renderVideoPlayer()}
@@ -167,12 +182,15 @@ export class Upcoming extends React.Component<Props, State> {
     } else if (!eventResponse.events || eventResponse.events.length === 0) {
       events = createItemWithIcon('No events found.', 'all_out');
     } else {
-      events = eventResponse.events.map((event, ind) => {
-        // See if we have any videos loaded for performers involved in this event.
-        const videos = this.getEventVideos(event);
+      events = eventResponse.events.map((event, eventInd) => {
+        // Look up videos for performers involved in this event.
+        const [videos, globalIndices] = this.getEventVideos(event);
+        // See if an event pertaining to this video is currently playing.
+        const highlight = globalIndices.indexOf(this.state.videoIndex) >= 0;
         return (
-          <EventItem event={event} videos={videos} key={ind}
-            onPlayVideo={this.handlePlayVideo}/>
+          <EventItem event={event} videos={videos} key={eventInd}
+            highlight={highlight}
+            onPlayVideo={ind => this.handlePlayVideo(globalIndices[ind])}/>
           )
       });
     }
@@ -181,8 +199,22 @@ export class Upcoming extends React.Component<Props, State> {
     </div>);
   }
 
+  private renderActions() {
+    if (!this.state.eventResponse) {
+      return null;
+    }
+    return (<div className="actions">
+      <Button variant="contained" color="primary"
+        onClick={() => this.handleShuffle()}>
+        Shuffle All
+        <Icon>shuffle</Icon>
+      </Button>
+    </div>);
+  }
+
   private renderVideoPlayer() {
-    const {videoHeight, videoId} = this.state;
+    const {videoHeight} = this.state;
+    const videoId = this.videoId;
     if (!videoId) {
       return null;
     }
@@ -226,9 +258,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handleVideoEnd = (event) => {
-    if (this.state.shuffling) {
-      this.nextRandom();
-    }
+    this.nextVideo();
   }
 
   private setVideoTitle(event) {
@@ -280,31 +310,27 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handleStopVideo = () => {
-    this.setState({videoId: null, shuffling: false});
+    this.setState({videoIndex: -1, shuffling: false});
   }
 
   private handleNextVideo = () => {
-    this.nextRandom();
+    this.nextVideo();
   }
 
-  private getEventVideos(event: Event): string[] {
-    const {videoResponse} = this.state;
-    const videos = [];
-    if (!videoResponse) {
-      return videos;
-    }
-
+  private getEventVideos(event: Event): [PerformerVideo[], number[]] {
     // Look up video for each performer.
+    const videos = [];
+    const indices = [];
     for (let perf of event.performers) {
       const {name} = perf;
-      const perfVideos = videoResponse.videos[name];
-      if (perfVideos) {
-        for (let video of perfVideos) {
+      for (const [index, video] of this.allPerformerVideos.entries()) {
+        if (video.performer_name == name) {
           videos.push(video);
+          indices.push(index);
         }
       }
     }
-    return videos;
+    return [videos, indices];
   }
 
   private async updateEvents() {
@@ -339,30 +365,36 @@ export class Upcoming extends React.Component<Props, State> {
     this.setState({videoResponse, loadingVideos: false});
   }
 
-  private handleShuffle = () => {
-    // If we're not already playing back, pick a random video to play.
-    if (!this.state.videoId) {
-      this.nextRandom();
-    }
+  private handleShuffle() {
+    const afterShuffle = () => {
+      // If we're not already playing back, pick a random video to play.
+      if (!this.videoId) {
+        this.nextVideo();
+      }
+    };
 
     this.setState({
       shuffling: true,
+    }, afterShuffle);
+  }
+
+  private nextVideo() {
+    let nextVideoIndex = -1;
+    if (this.state.shuffling) {
+      // Pick a random video index.
+      nextVideoIndex = Math.floor(Math.random() * this.allPerformerVideos.length);
+    } else {
+      nextVideoIndex = this.state.videoIndex + 1;
+    }
+    this.setState({
+      videoIndex: nextVideoIndex,
     });
   }
 
-  private nextRandom() {
-    // Pick a random video to play.
-    let videoId = this.state.videoId;
-    while (videoId == this.state.videoId) {
-      videoId = pickRandom(this.allVideoIds);
-    }
-    this.setState({videoId});
-  }
-
-  private handlePlayVideo = (video: string) => {
+  private handlePlayVideo(index: number) {
     // A specific video was selected to play.
-    console.log('handlePlayVideo', video);
-    this.setState({videoId: video, videoTitle: null, shuffling: false});
+    console.log('handlePlayVideo', index);
+    this.setState({videoIndex: index, videoTitle: null, shuffling: false});
   }
 
 
