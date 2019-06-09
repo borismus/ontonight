@@ -117,7 +117,7 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
 
   const events = [];
   for (const event of json.events) {
-    const {title, url, datetime_local, venue, performers, type, id} = event;
+    const {title, url, datetime, venue, performers, type, id} = event;
     // Filter non-concerts.
     if (type !== 'concert') {
       continue;
@@ -128,7 +128,7 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
       return {name, image};
     });
     const newEvent = {
-      id, title, url, datetime_local, venue, performers: performersValid
+      id, title, url, datetime, venue, performers: performersValid
     };
     events.push(newEvent);
   }
@@ -217,13 +217,12 @@ async function fetchLiveMusicNearbySongKick(request: EventRequest): Promise<Even
         id: event.id,
         title,
         url: event.uri,
-        datetime_local: event.start.datetime,
+        datetime: event.start.datetime,
+        date: event.start.date,
         performers,
         venue,
       };
       nearbyEvents.push(newEvent);
-    } else {
-      console.log(`Excluding ${event.venue.displayName} because it's too far.`);
     }
   }
   const response = {
@@ -235,6 +234,7 @@ async function fetchLiveMusicNearbySongKick(request: EventRequest): Promise<Even
 async function fetchSKMetroAreaId(lat: number, lon: number) {
   // TODO: Cache these results.
   const url = `${SONGKICK_ROOT}/search/locations.json?location=geo:${lat},${lon}&apikey=${SONGKICK_KEY}`;
+  console.log('fetchSKMetroAreaId', url);
   const res = await fetch(url);
   const json = await res.json();
   const {resultsPage} = json;
@@ -247,6 +247,7 @@ async function fetchSKMetroAreaId(lat: number, lon: number) {
 
 async function fetchSKEventsForMetroArea(metro_area_id: number, start_date: string, end_date: string) {
   const url = `${SONGKICK_ROOT}/metro_areas/${metro_area_id}/calendar.json?min_date=${start_date}&max_date=${end_date}&apikey=${SONGKICK_KEY}`;
+  console.log('fetchSKEventsForMetroArea', url);
   const res = await fetch(url);
   const json = await res.json();
   const {resultsPage} = json;

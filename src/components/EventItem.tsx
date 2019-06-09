@@ -37,8 +37,14 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
 
   const {event, highlight, videos} = props;
   const videoButtons = videos.map((v, i) => createVideoButton(v, i));
-  const m = moment(event.datetime_local);
-  const humanDate = m.format('MMMM D, LT');
+  let humanDate = 'unknown';
+  if (event.datetime) {
+    const m = moment(event.datetime);
+    humanDate = m.format('MMMM D, LT');
+  } else if (event.date) {
+    const m = moment(event.date);
+    humanDate = m.format('MMMM D');
+  }
   const performerImage = event.performers[0].image;
   const {lat, lon} = event.venue.location;
   const venueMapUrl = GOOGLE_MAPS_PREFIX + `${lat},${lon}`;
@@ -59,7 +65,7 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
       <ListItemText>
       <div className="event-content">
         <div className="info">
-          <div className="title">{event.title}</div>
+          <div className="title">{event.performers[0].name}</div>
           <a className="venue" href={venueMapUrl} target="_blank">
             {event.venue.name}
           </a>

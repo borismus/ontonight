@@ -20,7 +20,8 @@ export interface Event {
   id: number;
   title: string;
   url: string;
-  datetime_local: string;
+  datetime: string;
+  date: string;
   performers: Performer[];
   venue: Venue;
 }
