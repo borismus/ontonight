@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Music Kit Tinkering</title>
+  </head>
+  <body>
+    <input id="performer" value="radiohead"></input>
+    <button id="play">Play</button>
+    <div id="playing"></div>
+      <script>
+let music;
+document.addEventListener('musickitloaded', async function() {
+  // MusicKit global is now defined
+  MusicKit.configure({
+    developerToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkhUTUxBM01EWU4ifQ.eyJpYXQiOjE1NTk5NjA2NDcsImV4cCI6MTU3NTUxMjY0NywiaXNzIjoiUEJOWDVWRlYyUiJ9.2OmW3I2jKWIwsLsNOzY32uyWg8zx1CrIe6-FhCXrkOHHylrSbCjPDN74ex_FsoP0Wn4U9XvR10cBReQBQS2o0A',
+    app: {
+      name: 'My Cool Web App',
+      build: '1978.4.1'
+    }
+  });
+  music = MusicKit.getInstance();
+  music.addEventListener('playbackProgressDidChange', (event) => {
+    console.log('progress', event.progress);
+  });
+});
+
+async function playSongBy(performer) {
+  const results = await music.api.search(performer, { limit: 1, types: 'songs' });
+  const first = results.songs.data[0];
+  document.querySelector('#playing').innerHTML = JSON.stringify(first.attributes);
+  await music.setQueue({
+    song: first.id,
+  });
+  music.play();
+}
+
+document.querySelector('#play').addEventListener('click', () => {
+  const performer = document.querySelector('#performer').value;
+  playSongBy(performer);
+});
+
+      </script>
+    <script src="https://js-cdn.music.apple.com/musickit/v1/musickit.js"></script>
+  </body>
+</html>
