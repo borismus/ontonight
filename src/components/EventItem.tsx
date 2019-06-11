@@ -12,31 +12,18 @@ import Tooltip from '@material-ui/core/Tooltip';
 
 import * as moment from 'moment';
 
-import {Event, PerformerVideo} from '../../functions/src/interfaces';
+import {Event} from '../../functions/src/interfaces';
 
 const GOOGLE_MAPS_PREFIX = `https://www.google.com/maps/search/?api=1&query=`;
 
 interface Props {
   event: Event;
-  videos?: PerformerVideo[];
-  onPlayVideo(localIndex: number): void;
+  onPlay(localIndex: number): void;
   highlight: boolean;
 }
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
-  function createVideoButton(video: PerformerVideo, ind: number) {
-    const title = htmlDecode(video.video_title);
-    return (
-      <Tooltip title={title} key={ind}>
-        <IconButton className="play-video"
-          onClick={() => props.onPlayVideo(ind)}>
-          <Icon>play_arrow</Icon>
-        </IconButton>
-      </Tooltip>);
-  }
-
-  const {event, highlight, videos} = props;
-  const videoButtons = videos.map((v, i) => createVideoButton(v, i));
+  const {event, highlight} = props;
   let humanDate = 'unknown';
   if (event.datetime) {
     const m = moment(event.datetime);
@@ -45,7 +32,6 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
     const m = moment(event.date);
     humanDate = m.format('MMMM D');
   }
-  const performerImage = event.performers[0].image;
   const {lat, lon} = event.venue.location;
   const venueMapUrl = GOOGLE_MAPS_PREFIX + `${lat},${lon}`;
 
@@ -60,7 +46,7 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
     <ListItem alignItems="flex-start"
       className={'event' + (highlight ? ' highlight' : '')}>
       <ListItemAvatar>
-        <Avatar alt="Performer Image" src={performerImage} />
+        <Avatar alt="Performer Image" src="" />
       </ListItemAvatar>
       <ListItemText>
       <div className="event-content">
@@ -73,8 +59,6 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
         </div>
 
         <div className="filler" />
-
-        <div className="videos">{videoButtons}</div>
       </div>
     </ListItemText>
     {anchor}

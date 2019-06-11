@@ -15,12 +15,11 @@ export interface Venue {
 }
 
 export interface Event {
-  // The following fields are copied verbatim from the events response.
-  // (from https://platform.seatgeek.com/)
   id: number;
   title: string;
   url: string;
   datetime: string;
+  // Fallback in case datetime isn't specified.
   date: string;
   performers: Performer[];
   venue: Venue;
@@ -37,18 +36,4 @@ export interface EventRequest {
 export interface EventResponse {
   events?: Event[];
   error?: string;
-}
-
-export interface PerformerVideo {
-  performer_name: string;
-  video_title: string;
-  video_id: string;
-}
-
-export interface VideoRequest {
-  performer_names: string[];
-}
-
-export interface VideoResponse {
-  videos: {[key: string]: string[]};
 }

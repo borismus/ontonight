@@ -5,7 +5,7 @@ import * as fetch from 'node-fetch';
 
 admin.initializeApp();
 
-import {EventRequest, EventResponse, Event, LatLon, Performer, PerformerVideo, VideoRequest, VideoResponse} from './interfaces';
+import {EventRequest, EventResponse, Event, LatLon, Performer} from './interfaces';
 
 import {YOUTUBE_KEY_2 as YOUTUBE_KEY, SEATGEEK_CLIENT_ID, SONGKICK_KEY} from './secrets';
 
@@ -13,7 +13,6 @@ const YOUTUBE_ROOT = 'https://www.googleapis.com/youtube/v3';
 const SEATGEEK_ROOT = 'https://api.seatgeek.com/2/';
 const SONGKICK_ROOT = 'https://api.songkick.com/api/3.0';
 
-const MAX_VIDEO_COUNT = 2;
 const MUSIC_TOPIC = '/m/04rlf';
 
 export const listLiveMusicNearby = functions.https.onRequest(async(request, response) => {
@@ -49,26 +48,6 @@ export const listLiveMusicNearby = functions.https.onRequest(async(request, resp
 });
 
 
-export const listVideosForPerformers = functions.https.onRequest(async (request, response) => {
-  // Enable cors.
-  response.set('Access-Control-Allow-Origin', '*');
-
-  const {performers} = request.query;
-  if (!performers) {
-    response.status(500).send('Missing performers').end();
-    return;
-  }
-  const perfNames = performers.split(',');
-  const videos = {};
-  for (const performer of perfNames) {
-    console.log(`listVideosForPerformer: performer=${performer}.`);
-    const performerVideos = await fetchCachedVideosForPerformer(performer);
-    videos[performer] = performerVideos;
-  }
-  response.send({
-    videos,
-  });
-});
 
 async function fetchLiveMusicNearbySeatGeek(request: EventRequest) : Promise<EventResponse> {
   const {postal_code, radius, start_date, end_date} = request;
@@ -133,56 +112,6 @@ async function fetchEventsAtVenues(venueIds: number[], start_date: string, end_d
     events.push(newEvent);
   }
   return events;
-}
-
-async function fetchVideosForPerformer(performer: string) : Promise<PerformerVideo[]> {
-  // Call YouTube API.
-  const fields = encodeURIComponent('items/id,items/snippet/title');
-  const url = `${YOUTUBE_ROOT}/search?part=snippet&q=${performer}&key=${YOUTUBE_KEY}&type=video&maxResults=${MAX_VIDEO_COUNT}&topicId=${MUSIC_TOPIC}&fields=${fields}`;
-
-  /*
-  // One day... cleaner.
-  const params = new URLSearchParams();
-  params.append('part', 'snippet');
-  params.append('type', 'video');
-  params.append('fields', fields);
-  params.append('q', performer);
-  params.append('key', YOUTUBE_KEY);
-  params.append('topicId', MUSIC_TOPIC_ID);
-  params.append('maxResults', MAX_VIDEO_COUNT);
-  const url = `${YOUTUBE_ROOT}/search?${params.toString()}`;
-  */
-  console.log('youtube url', url);
-  const res = await fetch(url);
-  const json = await res.json();
-  const videos = json.items;
-
-  const out = [];
-  for (const video of videos.slice(0, MAX_VIDEO_COUNT)) {
-    const video_id = video.id.videoId;
-    const video_title = video.snippet.title;
-    out.push({
-      video_id,
-      video_title,
-      performer_name: performer,
-    });
-  }
-  return out;
-}
-
-async function fetchCachedVideosForPerformer(performer: string) {
-  // Check for cached search results to avoid going to YouTube.
-  const performerSafe = escape(performer.replace(/\./g, '%2E'));
-  const cache = admin.database().ref('videos').child(performerSafe);
-  const cachedVideos = (await cache.once('value')).val();
-
-  if (cachedVideos) {
-    return cachedVideos;
-  }
-
-  const videos = await fetchVideosForPerformer(performer);
-  await cache.set(videos);
-  return videos;
 }
 
 async function fetchLiveMusicNearbySongKick(request: EventRequest): Promise<EventResponse> {

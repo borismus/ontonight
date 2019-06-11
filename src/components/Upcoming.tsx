@@ -14,8 +14,7 @@ import {DatePicker} from './DatePicker';
 import {EventItem} from './EventItem';
 import {PlacePicker} from './PlacePicker';
 
-import {Event, EventRequest, EventResponse, PerformerVideo,
-  VideoRequest, VideoResponse} from '../../functions/src/interfaces';
+import {Event, EventRequest, EventResponse} from '../../functions/src/interfaces';
 
 const API_ROOT = 'https://us-central1-live-music-preview.cloudfunctions.net';
 const YMD_FORMAT = 'YYYY-MM-DD';
@@ -40,8 +39,6 @@ interface State {
   eventRequest: EventRequest;
   eventResponse: EventResponse;
   eventError: string;
-  videoRequest: VideoRequest;
-  videoResponse: VideoResponse;
 }
 
 export class Upcoming extends React.Component<Props, State> {
@@ -64,10 +61,6 @@ export class Upcoming extends React.Component<Props, State> {
     },
     eventResponse: null,
     eventError: null,
-
-    // Test data for rendering.
-    videoRequest: null,
-    videoResponse: null,
   }
 
   componentDidMount() {
@@ -94,53 +87,18 @@ export class Upcoming extends React.Component<Props, State> {
     return moment().add(count, 'days').format(YMD_FORMAT);
   }
 
-  get uniquePerformerNames() {
-    const performers = [];
+  get headlinerNames() {
     if (!this.state.eventResponse) {
-      return performers;
+      return [];
     }
 
-    for (let event of this.state.eventResponse.events) {
-      for (let perf of event.performers) {
-        const {name} = perf;
-        // Make sure performers are unique.
-        if (performers.indexOf(name) >= 0) {
-          continue;
-        }
-        performers.push(name);
-      }
-    }
-    return performers;
-  }
-
-  get allPerformerVideos(): PerformerVideo[] {
-    const {videoResponse} = this.state;
-    const out = [];
-    if (!videoResponse) {
-      return out;
-    }
-    for (let performer in videoResponse.videos) {
-      const videos = videoResponse.videos[performer];
-      for (let video of videos) {
-        out.push(video);
-      }
-    }
-    return out;
-  }
-
-  get videoId(): string {
-    if (this.state.videoIndex >= 0) {
-      return this.allPerformerVideos[this.state.videoIndex].video_id;
-    }
-    return null;
+    return this.state.eventResponse.events.map(
+      event => event.performers[0].name);
   }
 
   render() {
     const {dateType, eventRequest, videoHeight} = this.state;
     let mainStyle = null;
-    if (this.videoId) {
-      mainStyle = {marginBottom: (videoHeight + VIDEO_CONTROL_HEIGHT)};
-    }
 
     return (<div>
       <div style={mainStyle}>
@@ -167,8 +125,6 @@ export class Upcoming extends React.Component<Props, State> {
         {this.renderEvents()}
 
       </div>
-
-      {this.renderVideoPlayer()}
     </div>);
   }
 
@@ -183,14 +139,12 @@ export class Upcoming extends React.Component<Props, State> {
       events = createItemWithIcon('No events found.', 'all_out');
     } else {
       events = eventResponse.events.map((event, eventInd) => {
-        // Look up videos for performers involved in this event.
-        const [videos, globalIndices] = this.getEventVideos(event);
         // See if an event pertaining to this video is currently playing.
-        const highlight = globalIndices.indexOf(this.state.videoIndex) >= 0;
+        const highlight = false;
         return (
-          <EventItem event={event} videos={videos} key={eventInd}
+          <EventItem event={event} key={eventInd}
             highlight={highlight}
-            onPlayVideo={ind => this.handlePlayVideo(globalIndices[ind])}/>
+            onPlay={ind => this.handlePlay(eventInd)}/>
           )
       });
     }
@@ -205,67 +159,11 @@ export class Upcoming extends React.Component<Props, State> {
     }
     return (<div className="actions">
       <Button variant="contained" color="primary"
-        onClick={() => this.handleShuffle()}>
-        Shuffle All
-        <Icon>shuffle</Icon>
+        onClick={() => this.handlePlay()}>
+        Play All
+        <Icon>play_arrow</Icon>
       </Button>
     </div>);
-  }
-
-  private renderVideoPlayer() {
-    const {videoHeight} = this.state;
-    const videoId = this.videoId;
-    if (!videoId) {
-      return null;
-    }
-
-    // See https://developers.google.com/youtube/player_parameters for all
-    // parameters.
-    const opts = {
-      width: '100%',
-      height: String(videoHeight),
-      playerVars: {
-        autoplay: 1,
-        controls: 0,
-        modestbranding: 1,
-      }
-    };
-    return (<div className="video">
-      <YouTube videoId={videoId} opts={opts} onReady={this.handleVideoReady}
-        onStateChange={this.handleVideoStateChange}
-        onEnd={this.handleVideoEnd} />
-      <div className="controls">
-        <IconButton className="stop-video" onClick={this.handleStopVideo}>
-          <Icon>close</Icon>
-        </IconButton>
-        <div className="title">{this.state.videoTitle}</div>
-        <IconButton className="next-video" onClick={this.handleNextVideo}>
-          <Icon>skip_next</Icon>
-        </IconButton>
-      </div>
-    </div>);
-  }
-
-  private handleVideoReady = (event) => {
-    console.log('handleVideoReady', event);
-    event.target.playVideo();
-    this.setVideoTitle(event);
-  }
-
-  private handleVideoStateChange = (event) => {
-    console.log('handleVideoStateChange', event);
-    this.setVideoTitle(event);
-  }
-
-  private handleVideoEnd = (event) => {
-    this.nextVideo();
-  }
-
-  private setVideoTitle(event) {
-    const data = event.target.getVideoData();
-    this.setState({
-      videoTitle: data.title,
-    });
   }
 
   private handlePlaceChange = (postalCode: string) => {
@@ -309,30 +207,6 @@ export class Upcoming extends React.Component<Props, State> {
     }, () => this.updateEvents());
   }
 
-  private handleStopVideo = () => {
-    this.setState({videoIndex: -1, shuffling: false});
-  }
-
-  private handleNextVideo = () => {
-    this.nextVideo();
-  }
-
-  private getEventVideos(event: Event): [PerformerVideo[], number[]] {
-    // Look up video for each performer.
-    const videos = [];
-    const indices = [];
-    for (let perf of event.performers) {
-      const {name} = perf;
-      for (const [index, video] of this.allPerformerVideos.entries()) {
-        if (video.performer_name == name) {
-          videos.push(video);
-          indices.push(index);
-        }
-      }
-    }
-    return [videos, indices];
-  }
-
   private async updateEvents() {
     this.setState({loading: true, eventError: null, eventResponse: null});
     try {
@@ -348,52 +222,22 @@ export class Upcoming extends React.Component<Props, State> {
       return;
     }
 
-    const performerNames = this.uniquePerformerNames;
+    const performerNames = this.headlinerNames;
+
+    // Populate album art and song IDs for each performer.
+    for (let performer of performerNames) {
+      //const url = getTopAlbumArt(performer);
+    }
 
     // If there are no performers in this query, load no videos.
     if (performerNames.length === 0) {
       return;
     }
-
-    // Once we update the events, we should also update the videos.
-    this.setState({
-      videoRequest: {performer_names: performerNames},
-      loadingVideos: true,
-    });
-    const videoResponse = await this.makeVideoRequest(this.state.videoRequest)
-    console.log('videoResponse', videoResponse);
-    this.setState({videoResponse, loadingVideos: false});
   }
 
-  private handleShuffle() {
-    const afterShuffle = () => {
-      // If we're not already playing back, pick a random video to play.
-      if (!this.videoId) {
-        this.nextVideo();
-      }
-    };
-
-    this.setState({
-      shuffling: true,
-    }, afterShuffle);
-  }
-
-  private nextVideo() {
-    let nextVideoIndex = -1;
-    if (this.state.shuffling) {
-      // Pick a random video index.
-      nextVideoIndex = Math.floor(Math.random() * this.allPerformerVideos.length);
-    } else {
-      nextVideoIndex = this.state.videoIndex + 1;
-    }
-    this.setState({
-      videoIndex: nextVideoIndex,
-    });
-  }
-
-  private handlePlayVideo(index: number) {
-    // A specific video was selected to play.
-    console.log('handlePlayVideo', index);
+  private handlePlay(index = 0) {
+    // A specific item was selected to play.
+    console.log('handlePlay', index);
     this.setState({videoIndex: index, videoTitle: null, shuffling: false});
   }
 
@@ -407,22 +251,6 @@ export class Upcoming extends React.Component<Props, State> {
     if (res.status === 500) {
       return {error: await res.text()};
     }
-    const json = await res.json();
-    return json;
-  }
-
-  private async makeVideoRequest(videoRequest: VideoRequest): Promise<VideoResponse> {
-    console.log('videoRequest', videoRequest);
-    const {performer_names} = this.state.videoRequest;
-    for (let name of performer_names) {
-      if (name.indexOf(',') >= 0) {
-        console.warn(`Artist ${name} has a comma in it. Bad!.`);
-      }
-    }
-    const performerCsv = performer_names.map(name => escape(name)).join(',');
-    const url = `${API_ROOT}/listVideosForPerformers?performers=${performerCsv}`;
-    console.log('url', url);
-    const res = await fetch(url);
     const json = await res.json();
     return json;
   }
