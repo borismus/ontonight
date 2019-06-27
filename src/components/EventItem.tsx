@@ -1,10 +1,8 @@
 import * as React from 'react';
 
-import Avatar from '@material-ui/core/Avatar';
 import Icon from '@material-ui/core/Icon';
 import IconButton from '@material-ui/core/IconButton';
 import ListItem from '@material-ui/core/ListItem';
-import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import ListItemText from '@material-ui/core/ListItemText';
 import TextField from '@material-ui/core/TextField';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -18,8 +16,9 @@ const GOOGLE_MAPS_PREFIX = `https://www.google.com/maps/search/?api=1&query=`;
 
 interface Props {
   event: Event;
-  onPlay(localIndex: number): void;
+  onClick(): void;
   highlight: boolean;
+  extra: string;
 }
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
@@ -44,10 +43,8 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
 
   return (
     <ListItem alignItems="flex-start"
+      onClick={props.onClick}
       className={'event' + (highlight ? ' highlight' : '')}>
-      <ListItemAvatar>
-        <Avatar alt="Performer Image" src="" />
-      </ListItemAvatar>
       <ListItemText>
       <div className="event-content">
         <div className="info">
@@ -61,6 +58,9 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
         <div className="filler" />
       </div>
     </ListItemText>
+    <div className="extra">
+      {props.extra}
+    </div>
     {anchor}
     </ListItem>
   );

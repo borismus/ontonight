@@ -38,6 +38,8 @@ header {
 }
 
 .event {
+  cursor: pointer;
+
   &.highlight {
     background: palegoldenrod;
   }

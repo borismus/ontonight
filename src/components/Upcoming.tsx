@@ -6,7 +6,7 @@ import IconButton from '@material-ui/core/IconButton';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import TextField from '@material-ui/core/TextField';
-import YouTube from 'react-youtube';
+import {MusicPlayer} from './MusicPlayer';
 
 import * as moment from 'moment';
 
@@ -27,18 +27,19 @@ interface Props {}
 interface State {
   dateType: number;
   loading: boolean;
-  loadingVideos: boolean;
-
-  // Parameters concerning the video player.
-  videoIndex: number;
-  videoHeight: number;
-  videoTitle: string;
-  shuffling: boolean;
+  // Currently playing video index.
+  playIndex: number;
+  // Currently playing song details.
+  songName: string;
+  // Which songs have had errors.
+  errorIndices: number[];
 
   // Event and video requests and responses.
   eventRequest: EventRequest;
   eventResponse: EventResponse;
   eventError: string;
+
+  embedSearchQuery: string;
 }
 
 export class Upcoming extends React.Component<Props, State> {
@@ -46,12 +47,9 @@ export class Upcoming extends React.Component<Props, State> {
   state = {
     dateType: Number(localStorage.dateType) || 0,
     loading: false,
-    loadingVideos: false,
-
-    videoIndex: -1,
-    videoHeight: 0,
-    videoTitle: null,
-    shuffling: false,
+    playIndex: -1,
+    songName: '',
+    errorIndices: [],
 
     eventRequest: {
       radius: localStorage.radius || 3,
@@ -61,22 +59,12 @@ export class Upcoming extends React.Component<Props, State> {
     },
     eventResponse: null,
     eventError: null,
+    embedSearchQuery: null,
   }
+  musicPlayer = new MusicPlayer();
 
   componentDidMount() {
-    const width = Number(document.body.clientWidth);
-    const height = Math.min(width / VIDEO_ASPECT_RATIO, VIDEO_MAX_HEIGHT);
-    this.setState({videoHeight: height});
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (prevState.videoIndex != this.state.videoIndex) {
-      // Scroll to the right event.
-      const el = document.querySelector('#currently-playing');
-      if (el) {
-        el.scrollIntoView();
-      }
-    }
+    this.musicPlayer.on('ended', () => this.handleSongEnded());
   }
 
   get today() {
@@ -97,7 +85,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   render() {
-    const {dateType, eventRequest, videoHeight} = this.state;
+    const {dateType, eventRequest} = this.state;
     let mainStyle = null;
 
     return (<div>
@@ -123,7 +111,6 @@ export class Upcoming extends React.Component<Props, State> {
 
         {this.renderActions()}
         {this.renderEvents()}
-
       </div>
     </div>);
   }
@@ -138,13 +125,20 @@ export class Upcoming extends React.Component<Props, State> {
     } else if (!eventResponse.events || eventResponse.events.length === 0) {
       events = createItemWithIcon('No events found.', 'all_out');
     } else {
-      events = eventResponse.events.map((event, eventInd) => {
+      events = eventResponse.events.map((event, eventIndex) => {
         // See if an event pertaining to this video is currently playing.
-        const highlight = false;
+        const highlight = eventIndex === this.state.playIndex;
+        let extra;
+        if (this.state.errorIndices.indexOf(eventIndex) === -1) {
+          extra = highlight && this.state.songName;
+        } else {
+          extra = 'No songs found';
+        }
         return (
-          <EventItem event={event} key={eventInd}
+          <EventItem event={event} key={eventIndex}
             highlight={highlight}
-            onPlay={ind => this.handlePlay(eventInd)}/>
+            extra={extra}
+            onClick={() => this.handleClickEvent(eventIndex)}/>
           )
       });
     }
@@ -154,12 +148,14 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private renderActions() {
+    // No actions for now.
+    return null;
     if (!this.state.eventResponse) {
       return null;
     }
     return (<div className="actions">
       <Button variant="contained" color="primary"
-        onClick={() => this.handlePlay()}>
+        onClick={() => this.handlePlay(0)}>
         Play All
         <Icon>play_arrow</Icon>
       </Button>
@@ -208,6 +204,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private async updateEvents() {
+    this.handleStop();
     this.setState({loading: true, eventError: null, eventResponse: null});
     try {
       const eventResponse: EventResponse = await this.makeEventRequest(this.state.eventRequest);
@@ -235,10 +232,40 @@ export class Upcoming extends React.Component<Props, State> {
     }
   }
 
-  private handlePlay(index = 0) {
+  private handleClickEvent(index = 0) {
+    this.setState({songName: ''});
+    // If we click the currently playing event, pause the music.
+    if (this.state.playIndex === index) {
+      this.handleStop();
+    } else {
+      this.handlePlay(index);
+    }
+  }
+
+  private async handlePlay(index = 0) {
     // A specific item was selected to play.
     console.log('handlePlay', index);
-    this.setState({videoIndex: index, videoTitle: null, shuffling: false});
+    const performerName = this.state.eventResponse.events[index].performers[0].name;
+    this.setState({playIndex: index});
+    try {
+      const result = await this.musicPlayer.playPreview(performerName);
+      const quotedSongName = 'Preview of "' + this.musicPlayer.getSongName() + '"';
+      this.setState({songName: quotedSongName});
+    } catch (e) {
+      this.setState({playIndex: -1});
+      this.setState({errorIndices: [...this.state.errorIndices, index]});
+    }
+  }
+
+  private handleStop() {
+    this.musicPlayer.stop();
+    this.setState({playIndex: -1});
+  }
+
+  private handleSongEnded() {
+    // If the song just ends on its own, stop.
+    console.log('handleSongEnded');
+    this.handleStop();
   }
 
 
