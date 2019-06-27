@@ -46,22 +46,22 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
       onClick={props.onClick}
       className={'event' + (highlight ? ' highlight' : '')}>
       <ListItemText>
-      <div className="event-content">
-        <div className="info">
-          <div className="title">{event.performers[0].name}</div>
-          <a className="venue" href={venueMapUrl} target="_blank">
-            {event.venue.name}
-          </a>
-          <div className="date">{humanDate}</div>
-        </div>
+        <div className="event-content">
+          <div className="info">
+            <div className="title">{event.performers[0].name}</div>
+            <a className="venue" href={venueMapUrl} target="_blank" onClick={(e) => handleClickVenue(e)}>
+              {event.venue.name}
+            </a>
+            <div className="date">{humanDate}</div>
+          </div>
 
-        <div className="filler" />
-      </div>
-    </ListItemText>
-    <div className="extra">
-      {props.extra}
-    </div>
-    {anchor}
+          <div className="filler" />
+        </div>
+        <div className="extra">
+          {props.extra}
+        </div>
+      </ListItemText>
+      {anchor}
     </ListItem>
   );
 }
@@ -69,4 +69,8 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
 function htmlDecode(input: string) {
   var doc = new DOMParser().parseFromString(input, "text/html");
   return doc.documentElement.textContent;
+}
+
+function handleClickVenue(event) {
+  event.stopPropagation();
 }

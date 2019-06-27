@@ -132,7 +132,7 @@ export class Upcoming extends React.Component<Props, State> {
         if (this.state.errorIndices.indexOf(eventIndex) === -1) {
           extra = highlight && this.state.songName;
         } else {
-          extra = 'No songs found';
+          extra = '(No songs found)';
         }
         return (
           <EventItem event={event} key={eventIndex}
@@ -249,7 +249,7 @@ export class Upcoming extends React.Component<Props, State> {
     this.setState({playIndex: index});
     try {
       const result = await this.musicPlayer.playPreview(performerName);
-      const quotedSongName = 'Preview of "' + this.musicPlayer.getSongName() + '"';
+      const quotedSongName = 'Previewing "' + this.musicPlayer.getSongName() + '"';
       this.setState({songName: quotedSongName});
     } catch (e) {
       this.setState({playIndex: -1});

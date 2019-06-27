@@ -61,6 +61,7 @@ header {
 
       .venue {
         color: grey;
+        z-index: 99;
 
         &:hover {
         }
@@ -70,6 +71,10 @@ header {
     .filler {
       flex-grow: 1;
     }
+  }
+
+  .extra {
+    font-weight: bold;
   }
 }
 
