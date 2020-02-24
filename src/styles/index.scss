@@ -44,6 +44,16 @@ header {
     background: palegoldenrod;
   }
 
+  .progress {
+    position: absolute;
+    background: #ff000033;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    z-index: 0;
+  }
+
   .event-content {
     display: flex;
     flex-direction: row;

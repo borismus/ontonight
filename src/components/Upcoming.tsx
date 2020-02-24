@@ -31,6 +31,8 @@ interface State {
   playIndex: number;
   // Currently playing song details.
   songName: string;
+  // How far along we are.
+  songProgress: number;
   // Which songs have had errors.
   errorIndices: number[];
 
@@ -48,6 +50,7 @@ export class Upcoming extends React.Component<Props, State> {
     dateType: Number(localStorage.dateType) || 0,
     loading: false,
     playIndex: -1,
+    songProgress: 0,
     songName: '',
     errorIndices: [],
 
@@ -65,6 +68,8 @@ export class Upcoming extends React.Component<Props, State> {
 
   componentDidMount() {
     this.musicPlayer.on('ended', () => this.handleSongEnded());
+    this.musicPlayer.on('progress',
+      (percent: number) => this.handleSongProgress(percent));
   }
 
   get today() {
@@ -127,16 +132,18 @@ export class Upcoming extends React.Component<Props, State> {
     } else {
       events = eventResponse.events.map((event, eventIndex) => {
         // See if an event pertaining to this video is currently playing.
-        const highlight = eventIndex === this.state.playIndex;
+        const playing = eventIndex === this.state.playIndex;
         let extra;
         if (this.state.errorIndices.indexOf(eventIndex) === -1) {
-          extra = highlight && this.state.songName;
+          extra = playing && this.state.songName;
         } else {
           extra = '(No songs found)';
         }
+        const progress = playing ? this.state.songProgress : 0;
         return (
           <EventItem event={event} key={eventIndex}
-            highlight={highlight}
+            highlight={playing}
+            progress={progress}
             extra={extra}
             onClick={() => this.handleClickEvent(eventIndex)}/>
           )
@@ -233,7 +240,7 @@ export class Upcoming extends React.Component<Props, State> {
   }
 
   private handleClickEvent(index = 0) {
-    this.setState({songName: ''});
+    this.setState({songName: '', songProgress: 0});
     // If we click the currently playing event, pause the music.
     if (this.state.playIndex === index) {
       this.handleStop();
@@ -249,7 +256,7 @@ export class Upcoming extends React.Component<Props, State> {
     this.setState({playIndex: index});
     try {
       const result = await this.musicPlayer.playPreview(performerName);
-      const quotedSongName = 'Previewing "' + this.musicPlayer.getSongName() + '"';
+      const quotedSongName = `Previewing ${this.musicPlayer.getSongName()}`;
       this.setState({songName: quotedSongName});
     } catch (e) {
       this.setState({playIndex: -1});
@@ -266,6 +273,13 @@ export class Upcoming extends React.Component<Props, State> {
     // If the song just ends on its own, stop.
     console.log('handleSongEnded');
     this.handleStop();
+  }
+
+  private handleSongProgress(percent: number) {
+    console.log('handleSongProgress', percent);
+    this.setState({
+      songProgress: percent,
+    });
   }
 
 

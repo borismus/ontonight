@@ -19,6 +19,7 @@ interface Props {
   onClick(): void;
   highlight: boolean;
   extra: string;
+  progress: number;
 }
 
 export const EventItem: React.StatelessComponent<Props> = (props) => {
@@ -40,11 +41,13 @@ export const EventItem: React.StatelessComponent<Props> = (props) => {
   if (highlight) {
     anchor = (<div id="currently-playing"></div>);
   }
+  const progressPercent = (props.progress * 100) + '%';
 
   return (
     <ListItem alignItems="flex-start"
       onClick={props.onClick}
       className={'event' + (highlight ? ' highlight' : '')}>
+      <div className="progress" style={{width: progressPercent}}></div>
       <ListItemText>
         <div className="event-content">
           <div className="info">
